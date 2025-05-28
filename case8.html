@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Аэропорт - Заказ билетов и расписание</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f0f8ff;
+      color: #000; /* общий цвет текста - черный */
+    }
+    h1 {
+      color: #003366;
+    }
+    nav {
+      margin-bottom: 20px;
+    }
+    nav button {
+      margin-right: 10px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    section {
+      display: none;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      color: #000; /* черный цвет для текста в секциях */
+    }
+    section.active {
+      display: block;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, select {
+      padding: 8px;
+      width: 100%;
+      max-width: 300px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      color: #000; /* черный цвет для текста в инпутах и селектах */
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 700px;
+      margin-top: 15px;
+      color: #000; /* черный цвет текста в таблицах */
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+      color: #000; /* черный цвет текста в ячейках */
+    }
+    th {
+      background: #003366;
+      color: white;
+    }
+    button.submit-btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #003366;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    p.hint {
+      font-style: italic;
+      color: #555;
+      margin-bottom: 5px;
+    }
+    #bookingMessage {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Аэропорт</h1>
+  <nav>
+    <button onclick="showSection('booking')">Заказать билет</button>
+    <button onclick="showSection('schedule')">Расписание рейсов</button>
+    <button onclick="showSection('passengers')">Список пассажиров</button>
+  </nav>
+
+  <!-- Заказ билета -->
+  <section id="booking" class="active">
+    <h2>Заказать билет</h2>
+    <form id="bookingForm" onsubmit="return bookTicket(event)">
+      <p class="hint">Пожалуйста, введите ФИО пассажира:</p>
+      <label for="name">ФИО пассажира:</label>
+      <input type="text" id="name" required />
+
+      <label for="flight">Выберите рейс:</label>
+      <select id="flight" required>
+        <!-- Опции добавятся скриптом -->
+      </select>
+
+      <button type="submit" class="submit-btn">Заказать</button>
+    </form>
+    <p id="bookingMessage"></p>
+  </section>
+
+  <!-- Расписание рейсов -->
+  <section id="schedule">
+    <h2>Расписание рейсов</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Номер рейса</th>
+          <th>Откуда</th>
+          <th>Куда</th>
+          <th>Время вылета</th>
+          <th>Дата вылета</th>
+        </tr>
+      </thead>
+      <tbody id="flightsTableBody">
+        <!-- Заполнится динамически -->
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Список пассажиров -->
+  <section id="passengers">
+    <h2>Список пассажиров</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ФИО</th>
+          <th>Номер рейса</th>
+          <th>Откуда</th>
+          <th>Куда</th>
+          <th>Дата вылета</th>
+          <th>Время вылета</th>
+        </tr>
+      </thead>
+      <tbody id="passengersTableBody">
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+    const flights = [
+      { number: 'SU123', from: 'Москва', to: 'Санкт-Петербург', time: '10:30', date: '2025-06-01' },
+      { number: 'AF456', from: 'Санкт-Петербург', to: 'Омск', time: '12:00', date: '2025-06-02' },
+      { number: 'BA789', from: 'Омск', to: 'Новосибирск', time: '14:15', date: '2025-06-03' },
+      { number: 'LH101', from: 'Новосибирск', to: 'Санкт-Петербург', time: '16:45', date: '2025-06-04' },
+      { number: 'SU222', from: 'Санкт-Петербург', to: 'Москва', time: '09:00', date: '2025-06-05' }
+    ];
+
+    const passengers = [];
+
+    function showSection(id) {
+      document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if (id === 'passengers') updatePassengersTable();
+    }
+
+    function fillFlightsTable() {
+      const tbody = document.getElementById('flightsTableBody');
+      tbody.innerHTML = '';
+      flights.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${f.number}</td>
+          <td>${f.from}</td>
+          <td>${f.to}</td>
+          <td>${f.time}</td>
+          <td>${f.date}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function fillFlightOptions() {
+      const select = document.getElementById('flight');
+      select.innerHTML = '<option value="" disabled selected>Выберите рейс</option>';
+      flights.forEach((f, idx) => {
+        const option = document.createElement('option');
+        option.value = idx;
+        option.textContent = `${f.number}: ${f.from} → ${f.to} (${f.date} ${f.time})`;
+        select.appendChild(option);
+      });
+    }
+
+    function bookTicket(event) {
+      event.preventDefault();
+      const nameInput = document.getElementById('name');
+      const flightSelect = document.getElementById('flight');
+      const message = document.getElementById('bookingMessage');
+
+      const name = nameInput.value.trim();
+      const flightIndex = flightSelect.value;
+
+      if (!name) {
+        alert('Введите ФИО пассажира');
+        return false;
+      }
+      if (!flightIndex) {
+        alert('Выберите рейс');
+        return false;
+      }
+
+      const flight = flights[flightIndex];
+
+      passengers.push({
+        name,
+        flightNumber: flight.number,
+        from: flight.from,
+        to: flight.to,
+        date: flight.date,
+        time: flight.time
+      });
+
+      // Очистить форму
+      nameInput.value = '';
+      flightSelect.value = '';
+
+      message.textContent = `Билет на рейс ${flight.number} успешно заказан для ${name}.`;
+
+      updatePassengersTable();
+
+      return false;
+    }
+
+    function updatePassengersTable() {
+      const tbody = document.getElementById('passengersTableBody');
+      tbody.innerHTML = '';
+      passengers.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.name}</td>
+          <td>${p.flightNumber}</td>
+          <td>${p.from}</td>
+          <td>${p.to}</td>
+          <td>${p.date}</td>
+          <td>${p.time}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.onload = () => {
+      fillFlightsTable();
+      fillFlightOptions();
+    };
+  </script>
+</body>
+</html>
+
